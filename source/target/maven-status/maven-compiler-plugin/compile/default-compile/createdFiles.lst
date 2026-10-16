@@ -1,0 +1,5 @@
+es\scafftrix\conciliacionbatch\config\BatchConfig.class
+es\scafftrix\conciliacionbatch\processor\EmployeeItemProcessor.class
+es\scafftrix\conciliacionbatch\ConciliacionBatchApplication.class
+es\scafftrix\conciliacionbatch\listener\JobCompletionNotificationListener.class
+es\scafftrix\conciliacionbatch\model\Employee.class
