@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -17,17 +17,19 @@
     <artifactId>conciliacion-batch</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <name>conciliacion-batch</name>
-    <description>Proceso Spring Batch autónomo (lector CSV, procesador y writer JDBC)</description>
+        <description>Conciliacion de facturas contra pagos con Spring Batch (generado con Scafftrix y adaptado)</description>
 
     <properties>
         <java.version>17</java.version>
     </properties>
 
     <dependencies>
-        <!-- Spring Batch Core -->
+        <!-- Spring Batch con arranque JDBC del JobRepository: tablas BATCH_*, historial y reinicios.
+             En Spring Boot 4 el soporte JDBC de Batch se separó a spring-boot-starter-batch-jdbc;
+             con solo spring-boot-starter-batch se usa ResourcelessJobRepository (sin persistencia). -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-batch</artifactId>
+            <artifactId>spring-boot-starter-batch-jdbc</artifactId>
         </dependency>
 
         <!-- JDBC Driver para la base de datos embebida (Repository de Batch + Persistencia local) -->
@@ -41,7 +43,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Pruebas unitarias básicas -->
+        <!-- Pruebas unitarias bÃ¡sicas -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

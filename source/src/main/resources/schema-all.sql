@@ -1,10 +1,9 @@
-DROP TABLE IF EXISTS employees;
+DROP TABLE IF EXISTS facturas;
 
-CREATE TABLE employees (
-    id INT NOT NULL PRIMARY KEY,
-    first_name VARCHAR(50),
-    last_name VARCHAR(50),
-    email VARCHAR(100),
-    department VARCHAR(50),
-    salary DOUBLE
+CREATE TABLE facturas (
+    numero_factura VARCHAR(20) NOT NULL PRIMARY KEY,
+    fecha_emision DATE NOT NULL,
+    importe DECIMAL(10,2) NOT NULL,
+    nif_cliente VARCHAR(20) NOT NULL,
+    estado VARCHAR(30) NOT NULL
 );

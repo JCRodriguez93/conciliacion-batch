@@ -1,0 +1,13 @@
+target/
+*.class
+*.jar
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Base de datos H2 local (se genera al ejecutar la app)
+data/
+*.mv.db
+*.trace.db

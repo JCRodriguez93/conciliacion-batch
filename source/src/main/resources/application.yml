@@ -1,9 +1,11 @@
 spring:
   application:
-    name: scafftrix
+    name: conciliacion-batch
   datasource:
-    # Configuración de H2 en memoria
-    url: jdbc:h2:mem:batchdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    # H2 en fichero: los datos (tabla facturas) y las tablas BATCH_* de metadatos
+    # persisten tras la ejecución, de modo que se pueden inspeccionar después.
+    # La ruta ./data está en .gitignore.
+    url: jdbc:h2:file:./data/conciliacion;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
@@ -14,5 +16,5 @@ spring:
       mode: always
   batch:
     jdbc:
-      # Inicialización de tablas de Spring Batch en H2
+      # Inicialización de tablas de Spring Batch en H2 (requiere spring-boot-starter-batch-jdbc)
       initialize-schema: always

@@ -1,8 +1,11 @@
 package es.scafftrix.conciliacionbatch.config;
 
 import es.scafftrix.conciliacionbatch.listener.JobCompletionNotificationListener;
-import es.scafftrix.conciliacionbatch.model.Employee;
-import es.scafftrix.conciliacionbatch.processor.EmployeeItemProcessor;
+import es.scafftrix.conciliacionbatch.model.ConciliacionResult;
+import es.scafftrix.conciliacionbatch.model.Factura;
+import es.scafftrix.conciliacionbatch.model.Pago;
+import es.scafftrix.conciliacionbatch.processor.FacturaProcessor;
+import es.scafftrix.conciliacionbatch.processor.PagoConciliadorProcessor;
 import javax.sql.DataSource;
 import org.springframework.batch.core.job.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -18,64 +21,109 @@ import org.springframework.batch.infrastructure.item.file.builder.FlatFileItemRe
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
 @Configuration
 public class BatchConfig {
 
     @Bean
-    public FlatFileItemReader<Employee> reader() {
-        return new FlatFileItemReaderBuilder<Employee>()
-                .name("employeeItemReader")
-                .resource(new ClassPathResource("sample-data.csv"))
+    public FlatFileItemReader<Factura> readerFacturas() {
+        return new FlatFileItemReaderBuilder<Factura>()
+                .name("facturaItemReader")
+                .resource(new ClassPathResource("facturas.csv"))
                 .delimited()
-                .names("id", "firstName", "lastName", "email", "department", "salary")
-                .targetType(Employee.class)
+                .names("numeroFactura", "fechaEmision", "importe", "nifCliente")
+                .targetType(Factura.class)
                 .build();
     }
 
     @Bean
-    public EmployeeItemProcessor processor() {
-        return new EmployeeItemProcessor();
+    public FacturaProcessor processorFacturas() {
+        return new FacturaProcessor();
     }
 
     @Bean
-    public JdbcBatchItemWriter<Employee> writer(DataSource dataSource) {
-        return new JdbcBatchItemWriterBuilder<Employee>()
-                .sql("INSERT INTO employees (id, first_name, last_name, email, department, salary) " +
-                     "VALUES (:id, :firstName, :lastName, :email, :department, :salary)")
+    public JdbcBatchItemWriter<Factura> writerFacturas(DataSource dataSource) {
+        return new JdbcBatchItemWriterBuilder<Factura>()
+                .sql("INSERT INTO facturas (numero_factura, fecha_emision, importe, nif_cliente, estado) " +
+                     "VALUES (:numeroFactura, :fechaEmision, :importe, :nifCliente, 'PENDIENTE')")
                 .dataSource(dataSource)
                 .beanMapped()
                 .build();
     }
 
     @Bean
-    public Step step1(JobRepository jobRepository, 
-                      PlatformTransactionManager transactionManager,
-                      FlatFileItemReader<Employee> reader,
-                      EmployeeItemProcessor processor,
-                      JdbcBatchItemWriter<Employee> writer) {
-        return new StepBuilder("step1", jobRepository)
-                .<Employee, Employee>chunk(3)
-                .reader(reader)
-                .processor(processor)
-                .writer(writer)
+    public FlatFileItemReader<Pago> readerPagos() {
+        return new FlatFileItemReaderBuilder<Pago>()
+                .name("pagoItemReader")
+                .resource(new ClassPathResource("pagos.csv"))
+                .delimited()
+                .names("numeroFactura", "importe", "fechaPago")
+                .targetType(Pago.class)
+                .build();
+    }
+
+    @Bean
+    public PagoConciliadorProcessor processorPagos(JdbcTemplate jdbcTemplate) {
+        return new PagoConciliadorProcessor(jdbcTemplate);
+    }
+
+    @Bean
+    public JdbcBatchItemWriter<ConciliacionResult> writerPagos(DataSource dataSource) {
+        return new JdbcBatchItemWriterBuilder<ConciliacionResult>()
+                .sql("UPDATE facturas SET estado = :estado WHERE numero_factura = :numeroFactura")
+                .dataSource(dataSource)
+                .beanMapped()
+                .build();
+    }
+
+    @Bean
+    public Step stepFacturas(JobRepository jobRepository,
+                             PlatformTransactionManager transactionManager,
+                             FlatFileItemReader<Factura> readerFacturas,
+                             FacturaProcessor processorFacturas,
+                             JdbcBatchItemWriter<Factura> writerFacturas) {
+        return new StepBuilder("stepFacturas", jobRepository)
+                .<Factura, Factura>chunk(3)
+                .reader(readerFacturas)
+                .processor(processorFacturas)
+                .writer(writerFacturas)
                 .transactionManager(transactionManager)
                 .faultTolerant()
-                .skip(FlatFileParseException.class) // Omitir registros del CSV con errores de parseo
+                .skip(FlatFileParseException.class)
                 .skipLimit(5)
                 .build();
     }
 
     @Bean
-    public Job importUserJob(JobRepository jobRepository,
-                             Step step1,
-                             JobCompletionNotificationListener listener) {
-        return new JobBuilder("importEmployeeJob", jobRepository)
+    public Step stepPagos(JobRepository jobRepository,
+                          PlatformTransactionManager transactionManager,
+                          FlatFileItemReader<Pago> readerPagos,
+                          PagoConciliadorProcessor processorPagos,
+                          JdbcBatchItemWriter<ConciliacionResult> writerPagos) {
+        return new StepBuilder("stepPagos", jobRepository)
+                .<Pago, ConciliacionResult>chunk(3)
+                .reader(readerPagos)
+                .processor(processorPagos)
+                .writer(writerPagos)
+                .transactionManager(transactionManager)
+                .faultTolerant()
+                .skip(FlatFileParseException.class)
+                .skipLimit(5)
+                .build();
+    }
+
+    @Bean
+    public Job conciliacionJob(JobRepository jobRepository,
+                               Step stepFacturas,
+                               Step stepPagos,
+                               JobCompletionNotificationListener listener) {
+        return new JobBuilder("conciliacionJob", jobRepository)
                 .incrementer(new RunIdIncrementer())
                 .listener(listener)
-                .flow(step1)
-                .end()
+                .start(stepFacturas)
+                .next(stepPagos)
                 .build();
     }
 }
