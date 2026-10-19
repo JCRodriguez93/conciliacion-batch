@@ -20,8 +20,18 @@ public class JobCompletionNotificationListener implements JobExecutionListener {
     }
 
     @Override
+    public void beforeJob(JobExecution jobExecution) {
+        log.info("Job {} iniciado (ejecución id={})",
+                jobExecution.getJobInstance().getJobName(), jobExecution.getId());
+    }
+
+    @Override
     public void afterJob(JobExecution jobExecution) {
         if (jobExecution.getStatus() != BatchStatus.COMPLETED) {
+            log.error("Job {} [ejecución {}] finalizado con estado {}",
+                    jobExecution.getJobInstance().getJobName(), jobExecution.getId(), jobExecution.getStatus());
+            jobExecution.getAllFailureExceptions()
+                    .forEach(fallo -> log.error("  Fallo: {}", fallo.getMessage(), fallo));
             return;
         }
 

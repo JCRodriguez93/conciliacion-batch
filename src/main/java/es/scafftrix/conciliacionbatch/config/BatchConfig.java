@@ -1,6 +1,7 @@
 package es.scafftrix.conciliacionbatch.config;
 
 import es.scafftrix.conciliacionbatch.listener.JobCompletionNotificationListener;
+import es.scafftrix.conciliacionbatch.listener.RegistrosOmitidosListener;
 import es.scafftrix.conciliacionbatch.model.ConciliacionResult;
 import es.scafftrix.conciliacionbatch.model.Factura;
 import es.scafftrix.conciliacionbatch.model.Pago;
@@ -83,13 +84,15 @@ public class BatchConfig {
                              PlatformTransactionManager transactionManager,
                              FlatFileItemReader<Factura> readerFacturas,
                              FacturaProcessor processorFacturas,
-                             JdbcBatchItemWriter<Factura> writerFacturas) {
+                             JdbcBatchItemWriter<Factura> writerFacturas,
+                             RegistrosOmitidosListener registrosOmitidos) {
         return new StepBuilder("stepFacturas", jobRepository)
                 .<Factura, Factura>chunk(3)
                 .reader(readerFacturas)
                 .processor(processorFacturas)
                 .writer(writerFacturas)
                 .transactionManager(transactionManager)
+                .listener(registrosOmitidos)
                 .faultTolerant()
                 .skip(FlatFileParseException.class)
                 .skipLimit(5)
@@ -101,13 +104,15 @@ public class BatchConfig {
                           PlatformTransactionManager transactionManager,
                           FlatFileItemReader<Pago> readerPagos,
                           PagoConciliadorProcessor processorPagos,
-                          JdbcBatchItemWriter<ConciliacionResult> writerPagos) {
+                          JdbcBatchItemWriter<ConciliacionResult> writerPagos,
+                          RegistrosOmitidosListener registrosOmitidos) {
         return new StepBuilder("stepPagos", jobRepository)
                 .<Pago, ConciliacionResult>chunk(3)
                 .reader(readerPagos)
                 .processor(processorPagos)
                 .writer(writerPagos)
                 .transactionManager(transactionManager)
+                .listener(registrosOmitidos)
                 .faultTolerant()
                 .skip(FlatFileParseException.class)
                 .skipLimit(5)
